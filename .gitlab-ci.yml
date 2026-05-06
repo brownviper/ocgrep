@@ -61,20 +61,21 @@ build_windows:
     expire_in: 1 week
 
 # macOS (Built natively on a GitLab Apple Silicon runner)
-build_macos_arm64:
-  stage: build
-  # Route this job to GitLab's shared macOS runners
-  tags:
-    - saas-macos-medium-m1
-  before_script:
-    # macOS runners usually don't have Rust pre-installed, so we grab it quickly
-    - curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-    - source "$HOME/.cargo/env"
-  script:
-    - echo "Building for Apple Silicon (M1/M2/M3)..."
-    - cargo build --release
-  artifacts:
-    name: "ocgrep-macos-arm64"
-    paths:
-      - target/release/ocgrep
-    expire_in: 1 week
+# disable for now, as its not supported by the free tier
+# build_macos_arm64:
+#   stage: build
+#   # Route this job to GitLab's shared macOS runners
+#   tags:
+#     - saas-macos-medium-m1
+#   before_script:
+#     # macOS runners usually don't have Rust pre-installed, so we grab it quickly
+#     - curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+#     - source "$HOME/.cargo/env"
+#   script:
+#     - echo "Building for Apple Silicon (M1/M2/M3)..."
+#     - cargo build --release
+#   artifacts:
+#     name: "ocgrep-macos-arm64"
+#     paths:
+#       - target/release/ocgrep
+#     expire_in: 1 week
