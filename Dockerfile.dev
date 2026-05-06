@@ -1,0 +1,6 @@
+FROM rust:slim
+WORKDIR /app
+COPY . .
+
+# Default command runs tests
+CMD ["cargo", "test"]
