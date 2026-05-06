@@ -17,6 +17,9 @@ run: build
 clean:
 	docker rmi ocgrep-dev ocgrep || true
 
+release:
+	cargo build --release
+	
 wipe:
 	docker stop $$(docker ps -q) 2>/dev/null || true
 	docker container prune

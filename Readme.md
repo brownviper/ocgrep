@@ -27,3 +27,12 @@ make run ARGS="-r -n -c 'pub' /workspace"
 ```
 make run ARGS="-r -b -e 'root' /usr"
 ```
+
+## makeing release binary
+```
+make release
+```
+### using the release binary
+```
+target/release/ocgrep -n -c -r -b "days" ../odyssey
+```
