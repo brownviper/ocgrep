@@ -8,3 +8,4 @@ clap = { version = "4.0", features = ["derive"] }
 regex = "1.10"
 colored = "2.1" # For the --colour flag
 walkdir = "2.4"
+rayon = "1.8"

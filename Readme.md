@@ -23,3 +23,7 @@ make run ARGS="-n -c -e 'pub fn.*' src/main.rs"
 ```
 make run ARGS="-r -n -c 'pub' /workspace"
 ```
+#### benchmarking
+```
+make run ARGS="-r -b -e 'root' /usr"
+```

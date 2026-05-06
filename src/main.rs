@@ -5,6 +5,8 @@ use std::path::{Path, PathBuf};
 use std::process;
 use colored::Colorize;
 use walkdir::WalkDir;
+use std::time::Instant;
+use rayon::prelude::*;
 
 /// A simple grep clone written in Rust
 #[derive(Parser)]
@@ -31,12 +33,19 @@ struct Args {
     /// Recursively search directories
     #[arg(short = 'r', long)]
     recursive: bool,
+
+    /// Print execution time at the end
+    #[arg(short = 'b', long)]
+    benchmark: bool,
 }
 
 fn main() {
+    // Start the clock!
+    let start_time = Instant::now();
+
     let args = Args::parse();
 
-    // 1. Get all files to search
+    // Get all files to search
     let files = get_files(&args.path, args.recursive);
     
     // If we are searching multiple files, we should print the filename
@@ -48,20 +57,18 @@ fn main() {
     }
 
     // 2. Loop through every file found
-    for file_path in files {
-        // Safely attempt to read the file. 
-        // If it fails (e.g., it's a binary file like an image), we just skip it.
+    files.into_par_iter().for_each(|file_path| {
+        // Safely attempt to read the file
         let contents = match fs::read_to_string(&file_path) {
             Ok(c) => c,
-            Err(_) => continue, 
+            Err(_) => return, // Note: Use `return` instead of `continue` in a closure
         };
 
-        // 3. Search the file
+        // Search the file
         let results = search(&args.pattern, &contents, args.regex, args.color);
 
-        // 4. Print the results
+        // Print the results
         for (line_num, line) in results {
-            // Build a prefix (e.g., "src/main.rs:12:")
             let mut prefix = String::new();
             if show_filename {
                 prefix.push_str(&format!("{}:", file_path.display()));
@@ -69,10 +76,16 @@ fn main() {
             if args.line_number {
                 prefix.push_str(&format!("{}:", line_num));
             }
-
-            // Print the prefix (if any) and the matched line
+            // println! in Rust is thread-safe. It locks stdout for the duration 
+            // of the print, so our lines won't get garbled together!
             println!("{}{}", prefix, line);
         }
+    });
+
+    // Stop the clock!
+    if args.benchmark {
+        // eprintln! prints to standard error, keeping our standard output clean
+        eprintln!("\n⏱️  Execution time: {:?}", start_time.elapsed());
     }
 }
 

@@ -1,3 +1,0 @@
-This is a test file.
-It has a duct in it.
-Another line here.
