@@ -1,0 +1,70 @@
+name: ocgrep CI/CD
+
+# Trigger the pipeline on every push to the main branch
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  # ==========================================
+  # The Test Stage
+  # ==========================================
+  test:
+    name: Run Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run tests
+        run: cargo test
+
+  # ==========================================
+  # The Build Stage
+  # ==========================================
+  
+  build-linux:
+    name: Build Linux Native
+    needs: test # Waits for tests to pass before building
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build release binary
+        run: cargo build --release
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ocgrep-linux
+          path: target/release/ocgrep
+          retention-days: 7
+
+  build-windows:
+    name: Build Windows Native
+    needs: test
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build release binary
+        run: cargo build --release
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ocgrep-windows
+          path: target/release/ocgrep.exe
+          retention-days: 7
+
+  build-macos:
+    name: Build macOS (Apple Silicon)
+    needs: test
+    # macos-14 specifically targets Apple's M1/M2/M3 ARM64 hardware
+    runs-on: macos-14 
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build release binary
+        run: cargo build --release
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ocgrep-macos-arm64
+          path: target/release/ocgrep
+          retention-days: 7
