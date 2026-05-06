@@ -8,9 +8,10 @@ build:
 	docker build -t ocgrep .
 
 # Runs the CLI tool against your local files
+# tell Docker to pretend it's a real terminal by passing the -t (tty) and -i (interactive) flags
 # Usage: make run ARGS="-n duct some_file.txt"
 run: build
-	docker run --rm -v "$(PWD):/workspace" ocgrep $(ARGS)
+	docker run --rm -it -v "$(PWD):/workspace" ocgrep $(ARGS)
 
 # Cleans up the built Docker images
 clean:
