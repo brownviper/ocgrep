@@ -19,3 +19,7 @@ make run ARGS="-n -c 'fn search' src/main.rs"
 ```
 make run ARGS="-n -c -e 'pub fn.*' src/main.rs"
 ```
+#### recursive search
+```
+make run ARGS="-r -n -c 'pub' /workspace"
+```

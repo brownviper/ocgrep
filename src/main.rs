@@ -1,8 +1,10 @@
 use clap::Parser;
 use regex::Regex;
 use std::fs;
+use std::path::{Path, PathBuf};
 use std::process;
 use colored::Colorize;
+use walkdir::WalkDir;
 
 /// A simple grep clone written in Rust
 #[derive(Parser)]
@@ -25,27 +27,51 @@ struct Args {
     /// Highlight matches in red
     #[arg(short = 'c', long = "colour")] // We can map "colour" to "color"
     color: bool,
+
+    /// Recursively search directories
+    #[arg(short = 'r', long)]
+    recursive: bool,
 }
 
 fn main() {
-    // 1. Parse CLI arguments
     let args = Args::parse();
 
-    // 2. Read the file
-    let contents = fs::read_to_string(&args.path).unwrap_or_else(|err| {
-        eprintln!("Error reading file: {err}");
+    // 1. Get all files to search
+    let files = get_files(&args.path, args.recursive);
+    
+    // If we are searching multiple files, we should print the filename
+    let show_filename = files.len() > 1 || args.path.is_dir();
+
+    if files.is_empty() {
+        eprintln!("No files found or path is a directory without -r flag.");
         process::exit(1);
-    });
+    }
 
-    // 3. Search the file
-    let results = search(&args.pattern, &contents, args.regex, args.color);
+    // 2. Loop through every file found
+    for file_path in files {
+        // Safely attempt to read the file. 
+        // If it fails (e.g., it's a binary file like an image), we just skip it.
+        let contents = match fs::read_to_string(&file_path) {
+            Ok(c) => c,
+            Err(_) => continue, 
+        };
 
-    // 4. Print the results
-    for (line_num, line) in results {
-        if args.line_number {
-            println!("{line_num}:{line}");
-        } else {
-            println!("{line}");
+        // 3. Search the file
+        let results = search(&args.pattern, &contents, args.regex, args.color);
+
+        // 4. Print the results
+        for (line_num, line) in results {
+            // Build a prefix (e.g., "src/main.rs:12:")
+            let mut prefix = String::new();
+            if show_filename {
+                prefix.push_str(&format!("{}:", file_path.display()));
+            }
+            if args.line_number {
+                prefix.push_str(&format!("{}:", line_num));
+            }
+
+            // Print the prefix (if any) and the matched line
+            println!("{}{}", prefix, line);
         }
     }
 }
@@ -90,6 +116,23 @@ pub fn search(query: &str, contents: &str, is_regex: bool, is_colored: bool) -> 
             })
             .collect()
     }
+}
+
+pub fn get_files(path: &Path, recursive: bool) -> Vec<PathBuf> {
+    let mut files = Vec::new();
+
+    if recursive && path.is_dir() {
+        // Walk the directory, ignoring errors (like permission denied)
+        for entry in WalkDir::new(path).into_iter().filter_map(|e| e.ok()) {
+            if entry.path().is_file() {
+                files.push(entry.path().to_path_buf());
+            }
+        }
+    } else if path.is_file() {
+        files.push(path.to_path_buf());
+    }
+
+    files
 }
 
 #[cfg(test)]
@@ -152,5 +195,16 @@ No digits here";
         let expected = vec![(1, expected_line)];
         
         assert_eq!(expected, search(query, contents, false, true));
+    }
+
+    #[test]
+    fn test_get_files_recursive() {
+        // Search our own 'src' directory recursively
+        let path = Path::new("src");
+        let files = get_files(path, true);
+        
+        // It should find at least one file, and main.rs should be among them
+        assert!(!files.is_empty());
+        assert!(files.iter().any(|p| p.ends_with("main.rs")));
     }
 }
